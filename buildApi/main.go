@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"github.com/gorilla/mux"
+	"log"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
 // model for course -file
@@ -32,10 +36,15 @@ func (c *Course) IsEmpty() bool {
 func main() {
    fmt.Println("welcome to API by LearnCodeOnline")
    r := mux.NewRouter()
-   courses = append(courses, Course{CourseId: "1", CourseName: "reactjs bootcamp", CoursePrice: 299, Author: &Author{FullName: "John Doe", website: "lco.dev"}})
-    courses = append(courses, Course{CourseId: "2", CourseName: "MERN bootcamp", CoursePrice: 399, Author: &Author{FullName: "Mahima singh", website: "100x.dev"}})	 
+   courses = append(courses, Course{CourseId: "1", CourseName: "reactjs bootcamp", CoursePrice: 299, Author: &Author{FullName: "John Doe", Website: "lco.dev"}})
+    courses = append(courses, Course{CourseId: "2", CourseName: "MERN bootcamp", CoursePrice: 399, Author: &Author{FullName: "Mahima singh", Website: "100x.dev"}})	 
 	
-	
+	r.HandleFunc("/", serveHome).Methods("GET")
+	r.HandleFunc("/courses", getAllCourses).Methods("GET")
+	r.HandleFunc("/courses/{id}", getOneCourse).Methods("GET")
+	r.HandleFunc("/courses", createCourse).Methods("POST")
+	r.HandleFunc("/courses/{id}", updateCourse).Methods("PUT")
+	r.HandleFunc("/courses/{id}", deleteCourse).Methods("DELETE")
 	//listen to a port
 	log.Fatal(http.ListenAndServe(":4000", r))
 }
@@ -57,13 +66,13 @@ func getAllCourses(w http.ResponseWriter, r *http.Request) {
 func getOneCourse(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("get one course")
 	w.Header().Set("Content-Type", "application/json")
-	courseId := mux.Vars(r)
+	params := mux.Vars(r)
 
 	//loop through courses, find matching courseId and return the response
-	for_, course := range courses {
+	for _, course := range courses {
 		if course.CourseId == params["id"] {
 			json.NewEncoder(w).Encode(course)
-            return
+            
 		}
 	}
 	//if course not found
@@ -90,6 +99,9 @@ func createCourse(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
+	//TODO: check only if course name is duplicate
+	//loop through, when title matches , send json response of already exists
+
 	rand.Seed(time.Now().UnixNano())
 course.CourseId  = strconv.Itoa(rand.Intn(100))
 courses = append(courses, course)
@@ -100,7 +112,7 @@ return
 func updateCourse( w http.ResponseWriter, r *http.Request) {
 	fmt.Println("update course")
 	w.Header().Set("Content-Type", "application/json")
-	courseId := mux.Vars(r)
+	params := mux.Vars(r)
 
 	//loop through courses, find matching id and remove it then add with my ID
 	for index, course := range courses{
@@ -115,14 +127,16 @@ func updateCourse( w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+}
 
 func deleteCourse(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("delete course")
 	w.Header().Set("Content-Type", "application/json")
-	courseId := mux.Vars(r)
+	params := mux.Vars(r)
    for index, course := range courses {
 		if course.CourseId == params["id"] {
-            courses = append(courses[:index], courses[index+1]...)
+            courses = append(courses[:index], courses[index+1:]...)
+			json.NewEncoder(w).Encode("Course deleted successfully")
 			break;
 		}
 	}
